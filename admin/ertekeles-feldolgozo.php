@@ -1,6 +1,11 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 header('Content-Type: application/json');
+
+// WordPress környezet betöltése
 require_once('../../../../wp-load.php'); 
+
 global $wpdb;
 $table_name = $wpdb->prefix . 'wc_odin_review_ertekelesek';
 $table_name_stats = $wpdb->prefix . 'wc_odin_review_ertekelendo_termekek';
@@ -11,15 +16,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['termek_id'])) {
     $keresztnev = sanitize_text_field($_POST['keresztnev']);
     $szoveges_ertekeles = sanitize_textarea_field($_POST['szoveges_ertekeles']);
     $csillag_ertekeles = intval($_POST['csillag_ertekeles']);
-    $elfogadva = 'pending';
-    $van_szoveges_ertekeles = !empty($szoveges_ertekeles) ? 'yes' : 'no';    
+    $elfogadva = 'pending'; // Alapértelmezett érték
+    $van_szoveges_ertekeles = !empty($szoveges_ertekeles) ? 'yes' : 'no';
     
-    // Ellenőrizzük, hogy létezik-e a termék az értékelendő termékek között
     if (!check_if_product_exists_in_ertekelendo_termekek($termek_id)) {
         addblankertekelendotermek($termek_id);
     }
 
-    // Új értékelés rögzítése
+    // Próbáljuk meg beilleszteni az adatokat az adatbázisba
     $inserted = $wpdb->insert(
         $table_name,
         [
@@ -41,8 +45,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['termek_id'])) {
         );
 
         if ($stats) {
-            // Növeljük az adott csillagértékelés számát
-            $update_data = [];
+            // Növeljük a megfelelő csillagértékelést a statisztikákban
+            $update_data = [
+                'ossz_ertekeles' => $stats->ossz_ertekeles + 1, // Növeljük az összes értékelést
+            ];
+
             if ($csillag_ertekeles == 1) {
                 $update_data['egycsillag'] = $stats->egycsillag + 1;
             } elseif ($csillag_ertekeles == 2) {
@@ -56,24 +63,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['termek_id'])) {
             }
 
             // Frissítjük a statisztikai adatokat
-            $new_ossz_ertekeles = $stats->ossz_ertekeles + 1; // Növeljük az összes értékelést
             $wpdb->update(
                 $table_name_stats,
-                array_merge($update_data, [
-                    'ossz_ertekeles' => $new_ossz_ertekeles,
-                ]),
+                $update_data,
                 ['termek_id' => $termek_id],
-                array_merge(array_fill(0, count($update_data), '%d'), ['%d']),
+                array_fill(0, count($update_data), '%d'),
                 ['%d']
             );
 
-            // Frissítjük az átlagot
+            // Frissítjük az átlagos csillagértékelést
             $new_stats = $wpdb->get_row(
                 $wpdb->prepare("SELECT * FROM $table_name_stats WHERE termek_id = %d", $termek_id)
             );
 
             if ($new_stats) {
-                // Összes csillag értékelés számítása a megfelelő csillagértékelések alapján
+                // Összes csillag értékelés számítása
                 $total_stars = ($new_stats->egycsillag * 1) + ($new_stats->ketcsillag * 2) + ($new_stats->haromcsillag * 3) + ($new_stats->negycsillag * 4) + ($new_stats->otcsillag * 5);
 
                 // Ha van értékelés, akkor kiszámoljuk az átlagot, egyébként 0-t adunk
@@ -94,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['termek_id'])) {
             }
         }
 
-        echo json_encode(['success' => true, 'message' => 'Értékelés sikeresen mentve és statisztikák frissítve.']);
+        echo json_encode(['success' => true, 'message' => 'Értékelés sikeresen mentve és statisztikai adatok frissítve.']);
     } else {
         echo json_encode([
             'success' => false, 
@@ -103,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['termek_id'])) {
         ]);
     }
 } else {
-    echo json_encode(['success' => false, 'message' => 'Érvénytelen kérés vagy hiányzó adat.']);
+    echo json_encode(['success' => false, 'message' => 'Érvénytelen kérés.']);
 }
 
 exit;

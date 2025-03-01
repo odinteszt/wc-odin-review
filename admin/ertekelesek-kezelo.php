@@ -45,7 +45,8 @@
             <?php
             global $wpdb;
             $table_name = $wpdb->prefix . "wc_odin_review_ertekelesek";
-            $reviews = $wpdb->get_results("SELECT * FROM $table_name ORDER BY id DESC");
+          $reviews = $wpdb->get_results("SELECT * FROM $table_name ORDER BY id DESC");
+
 
             foreach ($reviews as $review) {
                 echo "<tr data-id='{$review->id}'>";
@@ -65,51 +66,38 @@
                 }
                 echo "</td>";
                 echo "<td>
-                        <button class='delete-btn' data-id='{$review->id}' onclick='handleAction(this, \"delete\")'>Törlés</button>
-                        <button class='edit-btn' data-id='{$review->id}' onclick='handleAction(this, \"edit\")'>Módosítás</button>
-                     </td>";
+                        <button class='delete-btn' onclick='deleteReview({$review->id})'>Törlés</button>
+                        <button class='edit-btn' onclick='editReview({$review->id}, \"{$review->keresztnev}\", \"{$review->szoveges_ertekeles}\", {$review->csillag_ertekeles})'>Módosítás</button>
+                      </td>";
                 echo "</tr>";
             }
             ?>
         </tbody>
     </table>
 </div>
-
 <style>
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-        font-family: Arial, sans-serif;
-    }
-
+table{width:100%;border-collapse:collapse;margin-top:20px;font-family:Arial,sans-serif;}
     th, td {
         border: 1px solid #ddd;
         padding: 10px;
         text-align: center;
     }
-
     th {
         background-color: #f4f4f4;
         font-weight: bold;
     }
-
     tr:nth-child(even) {
         background-color: #f9f9f9;
     }
-
     tr:hover {
         background-color: #f1f1f1;
     }
-
     .form-group {
         margin-bottom: 15px;
     }
-
     .form-group label {
         font-weight: bold;
     }
-
     .form-control {
         width: 100%;
         padding: 10px;
@@ -118,7 +106,6 @@
         border-radius: 5px;
         box-sizing: border-box;
     }
-
     .submit-btn {
         background-color: #4CAF50;
         color: white;
@@ -127,11 +114,9 @@
         cursor: pointer;
         border-radius: 5px;
     }
-
     .submit-btn:hover {
         background-color: #45a049;
     }
-
     .filter-input {
         padding: 10px;
         width: 300px;
@@ -139,79 +124,85 @@
         border-radius: 5px;
         border: 1px solid #ddd;
     }
-
     button {
         padding: 6px 12px;
         border: none;
         cursor: pointer;
         border-radius: 5px;
     }
-
     .delete-btn {
         background-color: #ff4d4d;
         color: white;
     }
-
     .edit-btn {
         background-color: #4CAF50;
         color: white;
     }
-
     .star {
         font-size: 20px;
         color: #ddd; /* Szürke szín az üres csillagoknak */
     }
-
     .star.filled {
         color: gold; /* Arany szín a kitöltött csillagoknak */
     }
 </style>
-
 <script>
-    function handleAction(button, action) {
-        const id = button.dataset.id;
-        let url = "";
-        let data = new URLSearchParams({ id }); // Alapértelmezett adat az ID
+function deleteReview(id) {
+    if (!confirm("Biztosan törlöd ezt az értékelést?")) return;
+    
+    // Létrehozzuk a FormData objektumot, hogy a post adatokat küldjük
+    var formData = new FormData();
+    formData.append('id', id);  // hozzáadjuk a törlendő értékelés ID-ját
+    
+    fetch("../wp-content/plugins/odin-review/admin/ertekeles-torles.php", {
+        method: "POST",
+        body: formData  // Itt a FormData küldése történik, nem JSON
+    })
+    .then(response => response.json())  // A válasz JSON formátumban
+    .then(data => {
+        alert(data.message);  // A válasz üzenetének megjelenítése
+        location.reload();  // Az oldal frissítése
+    });
+}
+function editReview(id, keresztnev, szoveges, csillagok) {
+    const newText = prompt("Új szöveges értékelés:", szoveges);
+    const newStars = prompt("Új csillag értékelés (1-5):", csillagok);
+    
+    if (newText !== null && newStars !== null) {
+        // Létrehozzuk a FormData objektumot
+        var formData = new FormData();
+        formData.append('id', id);  // Hozzáadjuk az ID-t
+        formData.append('szoveges', newText);  // Hozzáadjuk az új szöveges értékelést
+        formData.append('csillagok', newStars);  // Hozzáadjuk az új csillag értékelést
 
-        if (action === "delete") {
-            if (!confirm("Biztosan törlöd ezt az értékelést?")) return;
-            url = "../wp-content/plugins/odin-review/admin/moderalas-torles.php";
-        } else if (action === "edit") {
-            const keresztnev = button.closest("tr").querySelector("td:nth-child(4)").textContent;
-            const szoveges = prompt("Új szöveges értékelés:");
-            const csillagok = prompt("Új csillag értékelés (1-5):");
-
-            if (szoveges === null || csillagok === null) return;
-
-            url = "../wp-content/plugins/odin-review/admin/moderalas-modositas.php";
-            data = new URLSearchParams({ id, szoveges, csillagok });
-        }
-
-        fetch(url, {
+        fetch("../wp-content/plugins/odin-review/admin/ertekeles-modositas.php", {
             method: "POST",
-            body: data,
-            headers: { "Content-Type": "application/x-www-form-urlencoded" }
+            body: formData  // A FormData-t küldjük
         })
-        .then(response => response.json())
+        .then(response => response.json())  // A válasz JSON formátumban
         .then(data => {
-            if (data.success) {
-                alert(data.message);
-                location.reload();
-            } else {
-                alert(data.message);
-            }
-        })
-        .catch(error => {
-            alert("Hiba történt a művelet során.");
+            alert(data.message);  // A válasz üzenetének megjelenítése
+            location.reload();  // Az oldal frissítése
         });
     }
+}
 
-    function filterTable() {
-        const filter = document.getElementById("filter").value.toLowerCase();
-        document.querySelectorAll("#reviews_table tbody tr").forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(filter) ? "" : "none";
-        });
-    }
-
-    document.getElementById("review_form").addEventListener("submit", function (event)
+function filterTable() {
+    const filter = document.getElementById("filter").value.toLowerCase();
+    document.querySelectorAll("#reviews_table tbody tr").forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(filter) ? "" : "none";
+    });
+}
+document.getElementById("review_form").addEventListener("submit", function(event) {
+    event.preventDefault();
+    var formData = new FormData(this);
+    fetch("../wp-content/plugins/odin-review/admin/ertekeles-feldolgozo.php", {
+        method: "POST",
+        body: formData
+    }).then(response => response.json())
+      .then(data => {
+          alert(data.message);
+          location.reload(); // Frissítjük az oldalt
+      });
+});
 </script>
