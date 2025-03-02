@@ -115,6 +115,7 @@ class WC_Egyedi_Ertekelo {
             szoveges_ertekeles TEXT NOT NULL,
             csillag INT NOT NULL,
             datum DATETIME DEFAULT CURRENT_TIMESTAMP,
+            token VARCHAR(255) NOT NULL,
             statusz ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
             email_kuldve ENUM('yes', 'no') NOT NULL DEFAULT 'no'
         ) $charset_collate;";
@@ -170,6 +171,14 @@ class WC_Egyedi_Ertekelo {
         $value = 'Új értékelés érkezett';
         $wpdb->insert("{$wpdb->prefix}wc_odin_review_options", array('meta_key' => $meta_key, 'value' => $value));
 		
+        $meta_key = 'kupon_email_sub'; 
+        $value = 'Az értékelésedet kuponnal jutalmazzuk!';
+        $wpdb->insert("{$wpdb->prefix}wc_odin_review_options", array('meta_key' => $meta_key, 'value' => $value));
+		
+        $meta_key = 'kupon_email_form'; 
+        $value = 'itt a kuponod!';
+        $wpdb->insert("{$wpdb->prefix}wc_odin_review_options", array('meta_key' => $meta_key, 'value' => $value));
+
 		// Cron feladat hozzáadása
         if (!wp_next_scheduled('wc_ertekelesek_cron')) {
             wp_schedule_event(time(), 'daily', 'wc_ertekelesek_cron');

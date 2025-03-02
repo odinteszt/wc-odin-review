@@ -39,6 +39,7 @@
                 }
                 echo "</td>";
                 echo "<td>
+                        <input type='checkbox' name='send_coupon_{$review->id}' /> Kupon küldése
                         <button class='approve-btn' onclick='approveReview({$review->id})'>Elfogadás</button>
                         <button class='reject-btn' onclick='rejectReview({$review->id})'>Elutasítás</button>
                         <button class='edit-btn' onclick='editReview({$review->id}, \"{$review->keresztnev}\", \"{$review->szoveges_ertekeles}\", {$review->csillag})'>Módosítás</button>
@@ -104,31 +105,64 @@
 <script>
 function approveReview(id) {
     if (!confirm("Biztosan elfogadod ezt az értékelést?")) return;
-    fetch("../wp-content/plugins/odin-review/admin/ertekeles-elfogadas.php", {
+
+    var formData = new FormData();
+    formData.append('id', id);
+    var sendCoupon = document.querySelector(`input[name="send_coupon_${id}"]`).checked;
+    formData.append('send_coupon', sendCoupon);
+
+    fetch("../wp-content/plugins/odin-review/admin/ertekeles-elfogadas-ellenorzo.php", {
         method: "POST",
-        body: JSON.stringify({ id }),
-        headers: { "Content-Type": "application/json" }
-    }).then(() => location.reload());
+        body: formData
+    }).then(response => response.json())
+      .then(data => {
+          alert(data.message);
+          if (data.success) {
+              location.reload();
+          }
+      });
 }
 
 function rejectReview(id) {
     if (!confirm("Biztosan elutasítod ezt az értékelést?")) return;
+
+    var formData = new FormData();
+    formData.append('id', id);
+    var sendCoupon = document.querySelector(`input[name="send_coupon_${id}"]`).checked;
+    formData.append('send_coupon', sendCoupon);
+
     fetch("../wp-content/plugins/odin-review/admin/ertekeles-elutasitas.php", {
         method: "POST",
-        body: JSON.stringify({ id }),
-        headers: { "Content-Type": "application/json" }
-    }).then(() => location.reload());
+        body: formData
+    }).then(response => response.json())
+      .then(data => {
+          alert(data.message);
+          location.reload();
+      });
 }
 
 function editReview(id, keresztnev, szoveges, csillagok) {
     const newText = prompt("Új szöveges értékelés:", szoveges);
     const newStars = prompt("Új csillag értékelés (1-5):", csillagok);
+
     if (newText !== null && newStars !== null) {
-        fetch("../wp-content/plugins/odin-review/admin/ertekeles-modositas.php", {
+        var formData = new FormData();
+        formData.append('id', id);
+        formData.append('szoveges', newText);
+        formData.append('csillagok', newStars);
+        var sendCoupon = document.querySelector(`input[name="send_coupon_${id}"]`).checked;
+        formData.append('send_coupon', sendCoupon);
+
+        fetch("../wp-content/plugins/odin-review/admin/ertekeles-modositas-ellenorzo.php", {
             method: "POST",
-            body: JSON.stringify({ id, szoveges: newText, csillagok: newStars }),
-            headers: { "Content-Type": "application/json" }
-        }).then(() => location.reload());
+            body: formData
+        }).then(response => response.json())
+          .then(data => {
+              alert(data.message);
+              if (data.success) {
+                  location.reload();
+              }
+          });
     }
 }
 </script>

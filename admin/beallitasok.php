@@ -5,6 +5,9 @@ $adminmailform = get_meta_value_by_key("admin_email_form");
 $vasarlosubmail = get_meta_value_by_key("vasarlo_email_sub");
 $vasarlosubform = get_meta_value_by_key("vasarlo_email_form");
 $varakozasinapokszama = get_meta_value_by_key("varakozasi_ido");
+$kuponmailsubori = get_meta_value_by_key("kupon_email_sub");
+$kuponmailformori = get_meta_value_by_key("kupon_email_form");
+
 function my_admin_page() {
     if (isset($_POST['submit'])) {
         $adminmailcim_uj = sanitize_email($_POST['adminmailcim']);
@@ -84,11 +87,39 @@ function vasarlomailformmodify() {
         }
     }
 }
+function kuponmailmodify() {
+    if (isset($_POST['kuponsubsub'])) {
+        $kuponsubuj =$_POST['kuponsubmodi'];
+        if ($kuponsubuj) {
+            update_meta_value_by_key('kupon_email_sub', $kuponsubuj);
+            echo '<div class="updated"><p>A kupon e-mail tárgy frissítve!</p></div>';
+			header("Location: " . $_SERVER['REQUEST_URI']);
+            exit;
+        } else {
+            echo '<div class="error"><p>Hiba a kupon e-mail tárgy firssítésénél!</p></div>';
+        }
+    }
+}
+function kuponmailformmodify() {
+    if (isset($_POST['kuponmailsubsub'])) {
+        $kuponmailuj =$_POST['kuponmailmodi'];
+        if ($kuponmailuj) {
+            update_meta_value_by_key('kupon_email_form', $kuponmailuj);
+            echo '<div class="updated"><p>A kupon e-mail tartalma frissítve!</p></div>';
+			header("Location: " . $_SERVER['REQUEST_URI']);
+            exit;
+        } else {
+            echo '<div class="error"><p>Hiba a kupon e-mail tárgy firssítésénél!</p></div>';
+        }
+    }
+}
 my_admin_page();
 adminsubmodify();
 adminmailformmodify();
 vasarlomailsubmodify();
 vasarlomailformmodify();
+kuponmailmodify();
+kuponmailformmodify();
 varakozasmodify();
 ?>
 <div class="wrap">
@@ -143,6 +174,23 @@ varakozasmodify();
                 <label for="vasarlomailformmodi">Vásárló e-mail tartalma:</label>
                 <textarea id="vasarlomailformmodi" name="vasarlomailformmodi" rows="10" class="input-field"><?php echo esc_attr($vasarlosubform); ?></textarea>
                 <button type="submit" name="vasarloemailformsub" class="submit-btn">Módosít</button>
+            </div>
+        </form>
+    </section>
+    <section class="settings-section">
+        <h2>Kupon email form</h2>
+        <form method="post" action="" class="settings-form">
+            <div class="form-row">
+                <label for="kuponsubmodi">Kupon e-mail tárgya:</label>
+                <input type="text" id="kuponsubmodi" name="kuponsubmodi" value="<?php echo esc_attr($kuponmailsubori); ?>" class="input-field">
+                <button type="submit" name="kuponsubsub" class="submit-btn">Módosít</button>
+            </div>
+        </form>
+        <form method="post" action="" class="settings-form">
+            <div class="form-row">
+                <label for="kuponmailmodi">Kupon e-mail tartalma:</label>
+                <textarea id="kuponmailmodi" name="kuponmailmodi" rows="10" class="input-field"><?php echo esc_attr($kuponmailformori); ?></textarea>
+                <button type="submit" name="kuponmailsubsub" class="submit-btn">Módosít</button>
             </div>
         </form>
     </section>
